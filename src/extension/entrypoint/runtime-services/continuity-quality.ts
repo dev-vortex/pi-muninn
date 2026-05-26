@@ -7,7 +7,7 @@
 
 import type { ContinuityCertainty, ContinuityProvenance, ContinuitySection } from "../../../../packages/memory-core/src/continuity/continuity-codebook.js";
 import { isLowSignalSemanticOperationalTelemetryEntry } from "../../../../packages/memory-core/src/continuity/continuity-quality-gate.js";
-import { readContinuityEntries } from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+import { readContinuityEntries } from "../../../memory-data-adapters/sqlite/continuity/index.js";
 import {
   CONTINUITY_DEDUP_LOOKBACK_LIMIT,
   CONTINUITY_DUPLICATE_WINDOW_MS,

@@ -15,7 +15,7 @@ import path from "node:path";
 import {
   DEFAULT_GLOBAL_PROMOTION_POLICY,
   evaluateGlobalPromotionCandidate,
-} from "../../../index.js";
+} from "../../../../packages/memory-core/src/index.js";
 import {
   type BetterSqliteDatabase,
   openBetterSqliteDatabase,

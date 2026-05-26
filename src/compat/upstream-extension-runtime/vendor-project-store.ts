@@ -15,7 +15,7 @@ import {
   openBetterSqliteDatabase,
   readSqliteTableColumns as readBetterSqliteTableColumns,
   sqliteTableExists,
-} from "../../../packages/memory-core/src/adapters/sqlite/common/better-sqlite3-adapter.js";
+} from "../../memory-data-adapters/sqlite/common/better-sqlite3-adapter.js";
 
 export interface ProjectUserVendorStoreLike {
   load: () => void;

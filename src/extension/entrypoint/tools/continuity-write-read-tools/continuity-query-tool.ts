@@ -9,7 +9,7 @@ import { createMemoryCore } from "../../../../../packages/memory-core/src/index.
 import {
   createSqliteContinuityTelemetryProviderForDatabase,
   createSqliteProjectIndexDataAdapterForProjectMemoryDir,
-} from "../../../../../packages/memory-core/src/adapters/sqlite/index.js";
+} from "../../../../memory-data-adapters/sqlite/index.js";
 import type { ExtensionToolDependencies } from "./../types.js";
 
 /**

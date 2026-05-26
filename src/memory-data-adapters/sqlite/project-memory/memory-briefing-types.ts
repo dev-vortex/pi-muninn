@@ -6,7 +6,7 @@
  */
 
 import type { ProjectSemanticMemorySearchProvider } from "./semantic-search-provider.js";
-import type { ProjectMemoryMode } from "../../../project-memory/types.js";
+import type { ProjectMemoryMode } from "../../../../packages/memory-core/src/project-memory/types.js";
 
 /**
  * One rendered memory briefing row with LLM-readable source labels.

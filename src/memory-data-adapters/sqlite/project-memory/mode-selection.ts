@@ -7,7 +7,7 @@
  * index is stale, missing, or incomplete.
  */
 
-import type { ProjectMemoryMode } from "../../../project-memory/types.js";
+import type { ProjectMemoryMode } from "../../../../packages/memory-core/src/project-memory/types.js";
 import {
   fanoutProjectMemorySearch,
   type FanoutSearchHit,

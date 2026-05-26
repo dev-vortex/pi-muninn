@@ -10,7 +10,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 
-import { deriveParallelEvidenceMarker } from "../../../project-index/parallel-evidence.js";
+import { deriveParallelEvidenceMarker } from "../../../../packages/memory-core/src/project-index/parallel-evidence.js";
 import {
   type BetterSqliteDatabase,
   openBetterSqliteDatabase,

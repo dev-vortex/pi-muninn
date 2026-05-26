@@ -8,7 +8,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { ContinuitySection } from "../../../../../packages/memory-core/src/continuity/continuity-codebook.js";
-import type { ContinuityEntryLifecycleRecord } from "../../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+import type { ContinuityEntryLifecycleRecord } from "../../../../memory-data-adapters/sqlite/continuity/index.js";
 import type { ContinuityCompactionProposalPayload, ContinuityCompactionValidationReason } from "../continuity-compaction-shared.js";
 import type { ExtensionToolDependencies } from "../types.js";
 

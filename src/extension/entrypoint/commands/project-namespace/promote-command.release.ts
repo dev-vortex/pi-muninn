@@ -7,7 +7,7 @@ import { loadProjectMemoryConfig, resolveProjectMemoryDirectory } from "../../..
 import {
   readPromotionPipelineStatus,
   runDeterministicPromotionPipeline,
-} from "../../../../../packages/memory-core/src/adapters/sqlite/project-memory/promotion-pipeline.js";
+} from "../../../../memory-data-adapters/sqlite/project-memory/promotion-pipeline.js";
 import type { ExtensionCommandDependencies } from "../types.js";
 
 /**

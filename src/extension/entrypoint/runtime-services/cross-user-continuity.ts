@@ -10,10 +10,10 @@ import path from "node:path";
 import type {
   ContinuityEntryLifecycleRecord,
   ContinuityMilestoneRecord,
-} from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
-import { readContinuityEntriesByIds, readContinuityMilestones } from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+} from "../../../memory-data-adapters/sqlite/continuity/index.js";
+import { readContinuityEntriesByIds, readContinuityMilestones } from "../../../memory-data-adapters/sqlite/continuity/index.js";
 import type { ContinuityProvenance, ContinuitySection } from "../../../../packages/memory-core/src/continuity/continuity-codebook.js";
-import { discoverProjectUserDatabases } from "../../../../packages/memory-core/src/adapters/sqlite/project-index/index.js";
+import { discoverProjectUserDatabases } from "../../../memory-data-adapters/sqlite/project-index/index.js";
 import { normalizeContinuityContent, normalizeContinuitySection, normalizeContinuityProvenance } from "./continuity-normalization.js";
 
 export interface CrossUserContinuityEntryResult extends ContinuityEntryLifecycleRecord {

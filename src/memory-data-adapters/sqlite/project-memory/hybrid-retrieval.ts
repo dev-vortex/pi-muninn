@@ -15,7 +15,7 @@ import {
   type FanoutSearchHit,
 } from "../project-index/fanout-retrieval.js";
 import { searchProjectIndex } from "../project-index/project-index.js";
-import type { ProjectMemoryMode } from "../../../project-memory/types.js";
+import type { ProjectMemoryMode } from "../../../../packages/memory-core/src/project-memory/types.js";
 import {
   searchProjectMemoryByMode,
   type ModeAwareProjectSearchInput,

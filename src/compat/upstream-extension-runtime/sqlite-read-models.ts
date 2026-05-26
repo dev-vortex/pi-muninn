@@ -12,8 +12,8 @@ import {
   type BetterSqliteDatabase,
   openBetterSqliteDatabase,
   sqliteTableExists,
-} from "../../../packages/memory-core/src/adapters/sqlite/common/better-sqlite3-adapter.js";
-import { discoverProjectUserDatabases } from "../../../packages/memory-core/src/adapters/sqlite/project-index/fanout-retrieval.js";
+} from "../../memory-data-adapters/sqlite/common/better-sqlite3-adapter.js";
+import { discoverProjectUserDatabases } from "../../memory-data-adapters/sqlite/project-index/fanout-retrieval.js";
 import { resolveProjectMemoryDirectory } from "../../project-memory/config.js";
 import { MEMORY_SEARCH_STOP_WORDS } from "./constants.js";
 

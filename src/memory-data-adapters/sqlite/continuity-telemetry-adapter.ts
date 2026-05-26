@@ -1,7 +1,7 @@
 /**
  * File intent: adapt SQLite-backed continuity telemetry to memory-core ports.
  *
- * This memory-core adapter keeps concrete continuity telemetry persistence
+ * This root-provided adapter keeps concrete continuity telemetry persistence
  * behind the SQLite boundary while memory-core owns report/label orchestration.
  */
 
@@ -14,7 +14,7 @@ import type {
   CoreTelemetryReportResult,
   CoreTelemetryReviewLabelResult,
   TelemetryPort,
-} from "../../index.js";
+} from "../../../packages/memory-core/src/index.js";
 
 /**
  * Build diagnostics shared by SQLite telemetry provider results.

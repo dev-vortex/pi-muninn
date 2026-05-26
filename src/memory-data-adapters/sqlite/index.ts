@@ -1,9 +1,9 @@
 /**
- * File intent: export SQLite data-adapter implementations owned by memory-core.
+ * File intent: export root-owned SQLite data-adapter implementations.
  *
  * These adapters bind memory-core ports to the current SQLite-backed continuity,
  * project-index, telemetry, config, and related data paths. Concrete SQLite
- * engine helpers live under `common/` so memory-core never imports root `src/*`.
+ * engine helpers live under `common/` so memory-core depends only on ports.
  */
 
 export * from "./common/index.js";

@@ -19,7 +19,7 @@ import {
   encodeContinuityMetadata,
   type ContinuityMetadataLabels,
   type ContinuitySection,
-} from "../../../continuity/continuity-codebook.js";
+} from "../../../../packages/memory-core/src/continuity/continuity-codebook.js";
 
 /**
  * Stored continuity entry decoded into human-readable labels.

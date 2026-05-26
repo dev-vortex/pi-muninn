@@ -15,7 +15,7 @@ import path from "node:path";
 import {
   normalizeSqliteCountValue,
   openBetterSqliteDatabase,
-} from "../../../../packages/memory-core/src/adapters/sqlite/common/better-sqlite3-adapter.js";
+} from "../../../memory-data-adapters/sqlite/common/better-sqlite3-adapter.js";
 
 const MIN_ASSISTANT_TEXT_LENGTH = 20;
 const MIN_USER_TEXT_LENGTH = 10;

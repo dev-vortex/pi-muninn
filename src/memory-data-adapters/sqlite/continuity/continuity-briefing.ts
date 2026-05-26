@@ -11,8 +11,8 @@ import type {
   ContinuityCertainty,
   ContinuityProvenance,
   ContinuitySection,
-} from "../../../continuity/continuity-codebook.js";
-import { assessContinuityCompactionPressure } from "../../../continuity/compaction-pressure.js";
+} from "../../../../packages/memory-core/src/continuity/continuity-codebook.js";
+import { assessContinuityCompactionPressure } from "../../../../packages/memory-core/src/continuity/compaction-pressure.js";
 import {
   readContinuityActiveCounts,
   readContinuityCompactionPreviewStatusCounts,

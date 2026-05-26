@@ -11,7 +11,7 @@ import type {
   ContinuityCertainty,
   ContinuityProvenance,
   ContinuitySection,
-} from "../../../continuity/continuity-codebook.js";
+} from "../../../../packages/memory-core/src/continuity/continuity-codebook.js";
 
 /**
  * Default local embedding model aligned with upstream pi-mempalace behavior.

@@ -4,8 +4,8 @@
 
 import { getProjectSessionRuntime } from "../../runtime-services/project-session-store.js";
 import { loadProjectMemoryConfig, resolveProjectMemoryDirectory } from "../../../../project-memory/config.js";
-import { searchProjectMemoryByMode } from "../../../../../packages/memory-core/src/adapters/sqlite/project-memory/mode-selection.js";
-import { readProjectIndexStatus, rebuildProjectIndex } from "../../../../../packages/memory-core/src/adapters/sqlite/project-index/index.js";
+import { searchProjectMemoryByMode } from "../../../../memory-data-adapters/sqlite/project-memory/mode-selection.js";
+import { readProjectIndexStatus, rebuildProjectIndex } from "../../../../memory-data-adapters/sqlite/project-index/index.js";
 import type { ExtensionCommandDependencies } from "../types.js";
 import { notifyReleaseProjectNamespaceMessage } from "./help.release.js";
 

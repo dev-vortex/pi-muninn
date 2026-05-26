@@ -7,14 +7,14 @@
  * object instead of closing over ad hoc maps in a giant entrypoint file.
  */
 
-import type { ContinuityVectorEmbedder } from "../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
-import { createContinuityVectorEmbedder } from "../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+import type { ContinuityVectorEmbedder } from "../../memory-data-adapters/sqlite/continuity/index.js";
+import { createContinuityVectorEmbedder } from "../../memory-data-adapters/sqlite/continuity/index.js";
 import {
   createProjectSessionRuntimeStore,
   type ProjectSessionRuntimeStore,
 } from "./runtime-services/project-session-store.js";
-import type { RuntimeContextObservabilityTracker } from "../../../packages/memory-core/src/adapters/sqlite/runtime-context/index.js";
-import type { RuntimeCheckpointTracker } from "../../../packages/memory-core/src/adapters/sqlite/runtime/index.js";
+import type { RuntimeContextObservabilityTracker } from "../../memory-data-adapters/sqlite/runtime-context/index.js";
+import type { RuntimeCheckpointTracker } from "../../memory-data-adapters/sqlite/runtime/index.js";
 
 /**
  * Continuity compaction request profile selected for one request scope.

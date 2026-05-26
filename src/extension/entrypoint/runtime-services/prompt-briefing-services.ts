@@ -14,7 +14,7 @@ import {
   type SearchContinuityVectorEntriesResult,
   readContinuityEntriesByIds as defaultReadContinuityEntriesByIds,
   searchContinuityVectorEntries as defaultSearchContinuityVectorEntries,
-} from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+} from "../../../memory-data-adapters/sqlite/continuity/index.js";
 import {
   createMemoryCore,
   extractPromptSignalTokens,
@@ -26,11 +26,11 @@ import {
   createSqliteContinuityDataAdapterForDatabase,
   createSqliteContinuityTelemetryProviderForDatabase,
   createSqliteProjectIndexDataAdapterForProjectMemoryDir,
-} from "../../../../packages/memory-core/src/adapters/sqlite/index.js";
+} from "../../../memory-data-adapters/sqlite/index.js";
 import { resolveProjectContinuityBriefingMode } from "../../../project-memory/config.js";
-import { readRelatedUserMemoryCandidates } from "../../../../packages/memory-core/src/adapters/sqlite/project-memory/related-user-memory-briefing.js";
-import { buildMemorySemanticSignalKey } from "../../../../packages/memory-core/src/adapters/sqlite/project-memory/memory-briefing-utils.js";
-import { createSqliteVecProjectSemanticMemorySearchProvider } from "../../../../packages/memory-core/src/adapters/sqlite/project-memory/semantic-search-provider.js";
+import { readRelatedUserMemoryCandidates } from "../../../memory-data-adapters/sqlite/project-memory/related-user-memory-briefing.js";
+import { buildMemorySemanticSignalKey } from "../../../memory-data-adapters/sqlite/project-memory/memory-briefing-utils.js";
+import { createSqliteVecProjectSemanticMemorySearchProvider } from "../../../memory-data-adapters/sqlite/project-memory/semantic-search-provider.js";
 
 interface PromptBriefingServiceDependencies {
   continuityVectorEmbedder?: ContinuityVectorEmbedder;

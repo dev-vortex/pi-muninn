@@ -18,7 +18,7 @@ import {
 } from "../common/better-sqlite3-adapter.js";
 import { discoverProjectUserDatabases } from "./fanout-retrieval.js";
 import type { FanoutSearchHit } from "./fanout-retrieval.js";
-import { deriveParallelEvidenceMarker } from "../../../project-index/parallel-evidence.js";
+import { deriveParallelEvidenceMarker } from "../../../../packages/memory-core/src/project-index/parallel-evidence.js";
 
 /**
  * Current L2 cache DB filename under `${PROJECT}/.agent/memory`.

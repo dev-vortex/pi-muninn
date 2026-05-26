@@ -6,7 +6,7 @@
  */
 
 import { createMemoryCore } from "../../../../../packages/memory-core/src/index.js";
-import { createSqliteContinuityDataAdapter } from "../../../../../packages/memory-core/src/adapters/sqlite/index.js";
+import { createSqliteContinuityDataAdapter } from "../../../../memory-data-adapters/sqlite/index.js";
 import type { ExtensionToolDependencies } from "./../types.js";
 
 /**

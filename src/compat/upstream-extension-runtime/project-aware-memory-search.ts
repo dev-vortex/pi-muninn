@@ -5,7 +5,7 @@
  * project-memory lane and deterministic lexical fallback for broad misses.
  */
 
-import { searchProjectMemoryHybrid, type HybridProjectMemorySearchMetadata } from "../../../packages/memory-core/src/adapters/sqlite/project-memory/hybrid-retrieval.js";
+import { searchProjectMemoryHybrid, type HybridProjectMemorySearchMetadata } from "../../memory-data-adapters/sqlite/project-memory/hybrid-retrieval.js";
 import {
   loadProjectMemoryConfig,
   resolveProjectMemoryDirectory,

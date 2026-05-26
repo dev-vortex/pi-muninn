@@ -2,7 +2,7 @@
  * File intent: export SQLite-backed continuity adapter internals.
  *
  * These modules own concrete continuity SQL, vector, and database-path based
- * helper behavior. Host packages should prefer higher-level memory-core adapter
+ * helper behavior. Host packages should prefer higher-level root adapter
  * factories unless they explicitly need the low-level compatibility surface.
  */
 

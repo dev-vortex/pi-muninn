@@ -6,11 +6,11 @@
  * named modules below `src/extension/entrypoint/*`.
  */
 
-import { getRuntimeContextObservabilitySnapshot } from "../../../packages/memory-core/src/adapters/sqlite/runtime-context/index.js";
-import { recordRuntimeMemoryWrite, resolveCheckpointDatabasePaths, runPeriodicCheckpointIfNeeded, runShutdownCheckpointIfEnabled } from "../../../packages/memory-core/src/adapters/sqlite/runtime/index.js";
+import { getRuntimeContextObservabilitySnapshot } from "../../memory-data-adapters/sqlite/runtime-context/index.js";
+import { recordRuntimeMemoryWrite, resolveCheckpointDatabasePaths, runPeriodicCheckpointIfNeeded, runShutdownCheckpointIfEnabled } from "../../memory-data-adapters/sqlite/runtime/index.js";
 import { setProjectMemoryEnabled } from "./runtime-services/project-config-toggles.js";
 import { loadProjectMemoryConfig } from "../../project-memory/config.js";
-import { searchProjectMemoryByMode } from "../../../packages/memory-core/src/adapters/sqlite/project-memory/mode-selection.js";
+import { searchProjectMemoryByMode } from "../../memory-data-adapters/sqlite/project-memory/mode-selection.js";
 import {
   clearContinuityEntriesCompactedInto,
   countContinuityCompactionPreviewsInScope,
@@ -27,7 +27,7 @@ import {
   storeContinuityCompactionPreview,
   storeContinuityEntry,
   updateContinuityCompactionPreviewStatus,
-} from "../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+} from "../../memory-data-adapters/sqlite/continuity/index.js";
 import { isLowSignalSemanticOperationalTelemetryEntry } from "../../../packages/memory-core/src/continuity/continuity-quality-gate.js";
 import { registerLifecycleHooks } from "./hooks/register-lifecycle-hooks.js";
 import { createMemoryExtensionRuntimeState } from "./runtime-state.js";

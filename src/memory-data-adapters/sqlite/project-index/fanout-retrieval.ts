@@ -15,7 +15,7 @@ import {
   openBetterSqliteDatabase,
   sqliteTableExists,
 } from "../common/better-sqlite3-adapter.js";
-import { deriveParallelEvidenceMarker } from "../../../project-index/parallel-evidence.js";
+import { deriveParallelEvidenceMarker } from "../../../../packages/memory-core/src/project-index/parallel-evidence.js";
 
 /**
  * Fan-out search input for project user-memory databases.

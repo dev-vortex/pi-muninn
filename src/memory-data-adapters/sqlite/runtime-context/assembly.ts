@@ -9,7 +9,7 @@
 
 import { createHash } from "node:crypto";
 
-import type { ProjectMemoryMode } from "../../../project-memory/types.js";
+import type { ProjectMemoryMode } from "../../../../packages/memory-core/src/project-memory/types.js";
 import type { FanoutSearchHit } from "../project-index/fanout-retrieval.js";
 import {
   searchProjectMemoryByMode,

@@ -14,7 +14,7 @@ import path from "node:path";
 import {
   type BetterSqliteDatabase,
   openBetterSqliteDatabase,
-} from "../../packages/memory-core/src/adapters/sqlite/common/better-sqlite3-adapter.js";
+} from "../memory-data-adapters/sqlite/common/better-sqlite3-adapter.js";
 import {
   ensureProjectMemoryLocalGitignore,
   ensureProjectMemoryWorkspace,

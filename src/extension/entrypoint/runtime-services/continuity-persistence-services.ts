@@ -14,7 +14,7 @@ import {
   indexContinuityVectorEntry,
   storeContinuityEntry,
   type ContinuityVectorEmbedder,
-} from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
+} from "../../../memory-data-adapters/sqlite/continuity/index.js";
 import { buildContinuityContentWithSourceRefs, normalizeContinuityTimestamp } from "./continuity-normalization.js";
 import { buildContinuityEntryFingerprint, evaluateContinuityWriteQualityGate } from "./continuity-quality.js";
 import { isContinuityVectorEnabled } from "./runtime-config.js";

@@ -2,8 +2,8 @@
  * File intent: adapt SQLite-backed continuity persistence to memory-core ports.
  *
  * Continuity is not provided by pi-mempalace. Core owns continuity policy, while
- * this memory-core adapter owns data persistence details. Concrete SQLite helper
- * functions now live under `memory-core/src/adapters/sqlite/continuity`.
+ * this root-owned adapter owns data persistence details. Concrete SQLite helper
+ * functions live under `src/memory-data-adapters/sqlite/continuity`.
  */
 
 import {
@@ -30,7 +30,7 @@ import type {
   CoreContinuityRecord,
   CoreContinuitySectionCounts,
   RuntimeStatusRequest,
-} from "../../index.js";
+} from "../../../packages/memory-core/src/index.js";
 
 /**
  * Backend result for one continuity write.

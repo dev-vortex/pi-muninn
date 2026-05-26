@@ -5,7 +5,7 @@
  * from the project index/fanout path and excluding continuity rows.
  */
 
-import { searchProjectMemoryByMode } from "../../../packages/memory-core/src/adapters/sqlite/project-memory/mode-selection.js";
+import { searchProjectMemoryByMode } from "../../memory-data-adapters/sqlite/project-memory/mode-selection.js";
 import {
   loadProjectMemoryConfig,
   resolveProjectMemoryDirectory,

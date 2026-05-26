@@ -7,7 +7,7 @@
  * summarized before an agent starts or before a turn is answered.
  */
 
-import type { ContinuitySection } from "../../../continuity/continuity-codebook.js";
+import type { ContinuitySection } from "../../../../packages/memory-core/src/continuity/continuity-codebook.js";
 import {
   readContinuityEntries,
   readContinuityMilestones,

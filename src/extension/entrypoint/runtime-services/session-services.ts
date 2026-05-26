@@ -7,11 +7,11 @@
 
 import { randomUUID } from "node:crypto";
 
-import { purgeContinuityCompactionPreviews } from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
-import type { RuntimeCheckpointTracker } from "../../../../packages/memory-core/src/adapters/sqlite/runtime/index.js";
-import { createRuntimeCheckpointTracker } from "../../../../packages/memory-core/src/adapters/sqlite/runtime/index.js";
-import type { RuntimeContextObservabilityTracker } from "../../../../packages/memory-core/src/adapters/sqlite/runtime-context/index.js";
-import { createRuntimeContextObservabilityTracker, getRuntimeContextObservabilitySnapshot } from "../../../../packages/memory-core/src/adapters/sqlite/runtime-context/index.js";
+import { purgeContinuityCompactionPreviews } from "../../../memory-data-adapters/sqlite/continuity/index.js";
+import type { RuntimeCheckpointTracker } from "../../../memory-data-adapters/sqlite/runtime/index.js";
+import { createRuntimeCheckpointTracker } from "../../../memory-data-adapters/sqlite/runtime/index.js";
+import type { RuntimeContextObservabilityTracker } from "../../../memory-data-adapters/sqlite/runtime-context/index.js";
+import { createRuntimeContextObservabilityTracker, getRuntimeContextObservabilitySnapshot } from "../../../memory-data-adapters/sqlite/runtime-context/index.js";
 import type { MemoryExtensionRuntimeState } from "../runtime-state.js";
 import { resolveSessionId } from "./common-runtime-services.js";
 

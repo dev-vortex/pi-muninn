@@ -1,5 +1,5 @@
 /**
- * File intent: export shared SQLite engine helpers for memory-core adapters.
+ * File intent: export shared SQLite engine helpers for root-provided data adapters.
  *
  * This is still a concrete better-sqlite3 boundary, not a generic database
  * abstraction. Domain portability belongs in memory-core ports above it.

@@ -1,9 +1,9 @@
 /**
  * File intent: define the SQLite data-adapter boundary for L2 project-index data.
  *
- * Core owns L2 retrieval policy. This memory-core adapter owns concrete
+ * Core owns L2 retrieval policy. This root-provided adapter owns concrete
  * index/cache persistence and wraps the current project-index SQLite/fan-out
- * implementation until that SQL can move fully into memory-core adapters.
+ * implementation behind memory-core data-adapter ports.
  */
 
 import path from "node:path";
@@ -11,7 +11,7 @@ import path from "node:path";
 import type {
   ContinuityProvenance,
   ContinuitySection,
-} from "../../continuity/continuity-codebook.js";
+} from "../../../packages/memory-core/src/continuity/continuity-codebook.js";
 import {
   readContinuityEntriesByIds,
   readContinuityMilestones,
@@ -38,7 +38,7 @@ import type {
   ProjectIndexDataAdapterPort,
   RuntimeStatusRequest,
   CoreTextResult,
-} from "../../index.js";
+} from "../../../packages/memory-core/src/index.js";
 
 /**
  * Minimal backend surface used by the project-index data adapter.
