@@ -7,7 +7,7 @@
 
 import { bootstrapProjectSessionRuntime, getProjectSessionRuntime } from "./project-session-store.js";
 import { ensureContinuityVectorSchema, readContinuityVectorStatusCounts } from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
-import { ensureProjectUserMemoryDatabase } from "../../../../packages/memory-core/src/adapters/pi-mempalace-compatible/project-memory/user-memory-ingest.js";
+import { ensureProjectUserMemoryDatabase } from "../../../memory-providers/pi-mempalace-compatible/project-memory/user-memory-ingest.js";
 import type { MemoryExtensionRuntimeState } from "../runtime-state.js";
 import { isContinuityVectorEnabled } from "./runtime-config.js";
 

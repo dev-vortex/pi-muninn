@@ -7,7 +7,7 @@
 
 import path from "node:path";
 
-import { createPiMempalaceMemoryProvider } from "../../../packages/memory-core/src/adapters/pi-mempalace-compatible/index.js";
+import { createPiMempalaceCompatibleMemoryProvider } from "../../memory-providers/pi-mempalace-compatible/index.js";
 import { createMemoryCore } from "../../../packages/memory-core/src/index.js";
 import { loadProjectMemoryConfig } from "../../project-memory/config.js";
 import { resolveProjectMemoryStorePaths } from "../../project-memory/store-resolver.js";
@@ -98,7 +98,7 @@ export const executeMemorySaveL1 = async (input: {
 
     vendorStoreResult.store.load();
 
-    const memoryProvider = createPiMempalaceMemoryProvider({
+    const memoryProvider = createPiMempalaceCompatibleMemoryProvider({
       store: async (storeInput) => {
         const result = await vendorStoreResult.store.store({
           ...storeInput,
@@ -226,7 +226,7 @@ export const executeMemorySaveL3 = async (input: {
 
   try {
     let lastUpstreamResult: unknown = null;
-    const memoryProvider = createPiMempalaceMemoryProvider({
+    const memoryProvider = createPiMempalaceCompatibleMemoryProvider({
       store: async (storeInput) => {
         lastUpstreamResult = await executeUpstreamMemorySaveRoute({
           executeArgs: input.executeArgs,

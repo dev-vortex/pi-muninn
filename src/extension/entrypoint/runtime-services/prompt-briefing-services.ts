@@ -21,7 +21,7 @@ import {
   normalizePromptSignalText,
   type CoreContinuityBriefingSemanticResult,
 } from "../../../../packages/memory-core/src/index.js";
-import { createPiMempalaceMemoryProvider } from "../../../../packages/memory-core/src/adapters/pi-mempalace-compatible/index.js";
+import { createPiMempalaceCompatibleMemoryProvider } from "../../../memory-providers/pi-mempalace-compatible/index.js";
 import {
   createSqliteContinuityDataAdapterForDatabase,
   createSqliteContinuityTelemetryProviderForDatabase,
@@ -173,7 +173,7 @@ export const createPromptBriefingServices = (dependencies: PromptBriefingService
       },
     });
 
-  const createRelatedUserMemoryProvider = (runtime: any) => createPiMempalaceMemoryProvider({
+  const createRelatedUserMemoryProvider = (runtime: any) => createPiMempalaceCompatibleMemoryProvider({
     store: async () => {
       throw new Error("prompt briefing never writes through related-user memory provider");
     },

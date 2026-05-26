@@ -14,7 +14,7 @@ import {
   readContinuityTelemetryTrendReport,
 } from "../../../../packages/memory-core/src/adapters/sqlite/continuity/index.js";
 import { readProjectIndexStatus } from "../../../../packages/memory-core/src/adapters/sqlite/project-index/index.js";
-import { readProjectUserMemoryStatusCounts } from "../../../../packages/memory-core/src/adapters/pi-mempalace-compatible/project-memory/user-memory-ingest.js";
+import { readProjectUserMemoryStatusCounts } from "../../../memory-providers/pi-mempalace-compatible/project-memory/user-memory-ingest.js";
 import type { MemoryExtensionRuntimeState } from "../runtime-state.js";
 import { CONTINUITY_SECTION_VALUES } from "./constants.js";
 import { assessContinuityCompactionPressure } from "./continuity-compaction-analysis.js";

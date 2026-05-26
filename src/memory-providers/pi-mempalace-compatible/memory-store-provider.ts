@@ -1,7 +1,7 @@
 /**
  * File intent: adapt pi-mempalace-compatible memory behavior to memory-core ports.
  *
- * This memory-core adapter is allowed to understand vendor-compatible memory
+ * This root-owned provider is allowed to understand vendor-compatible memory
  * shapes, but it only accepts an injected backend. That keeps the actual vendor
  * import and host lifecycle concerns out of memory-core while preserving a
  * replaceable compatibility path.
@@ -16,7 +16,7 @@ import type {
   CoreMemorySaveResult,
   CoreMemorySearchInput,
   CoreMemorySearchResult,
-} from "../../index.js";
+} from "../../../packages/memory-core/src/index.js";
 
 /**
  * Vendor-compatible save input accepted by the provider-local backend adapter.
@@ -155,7 +155,7 @@ const normalizeHit = (
 /**
  * Create a memory-core provider that wraps a pi-mempalace-compatible backend.
  */
-export const createPiMempalaceMemoryProvider = (
+export const createPiMempalaceCompatibleMemoryProvider = (
   backend: PiMempalaceMemoryBackend,
 ): CoreMemoryProviderPort => ({
   save: async (input: CoreMemorySaveInput): Promise<CoreMemorySaveResult> => {
