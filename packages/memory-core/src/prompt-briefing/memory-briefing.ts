@@ -177,11 +177,13 @@ const mapProjectHitsToRows = (input: {
   const aliases = new Map<string, string>();
   return input.hits.map((hit) => ({
     scope: "project" as const,
-    contributor: resolveContributorLabel({
-      userId: hit.userId || "unknown-user",
-      activeUserId: input.activeUserId,
-      otherMemberAliases: aliases,
-    }),
+    contributor: typeof hit.metadata?.contributorLabel === "string" && hit.metadata.contributorLabel.length > 0
+      ? hit.metadata.contributorLabel
+      : resolveContributorLabel({
+        userId: hit.userId || "unknown-user",
+        activeUserId: input.activeUserId,
+        otherMemberAliases: aliases,
+      }),
     topic: hit.topic || "general",
     timestamp: hit.timestamp || "",
     content: clipMemoryContent(hit.content, input.rowClipLength),

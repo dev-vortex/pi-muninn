@@ -26,21 +26,21 @@ export const createToolResultHandler = (deps: LifecycleHookDependencies): Lifecy
       : "";
 
     const isMemoryWriteTool = constants.memoryWriteToolNames.has(toolName);
-    const isContinuityActivityTool = constants.continuityActivityToolNames.has(toolName);
+    const isContinuityMutationTool = constants.continuityMutationToolNames.has(toolName);
     const isExplicitContinuityWriteTool = constants.continuityExplicitWriteToolNames.has(toolName);
     const isReadTool = toolName === "read";
 
     const toolInput = (event as { input?: unknown })?.input;
     const toolIsError = (event as { isError?: unknown })?.isError === true;
 
-    if (!isMemoryWriteTool && !isContinuityActivityTool && !isExplicitContinuityWriteTool && !isReadTool) {
+    if (!isMemoryWriteTool && !isContinuityMutationTool && !isExplicitContinuityWriteTool && !isReadTool) {
       return;
     }
 
     const projectRuntime = await runtimeDeps.resolveProjectRuntime(ctx);
 
     if (!projectRuntime) {
-      if (isContinuityActivityTool || isExplicitContinuityWriteTool) {
+      if (isContinuityMutationTool || isExplicitContinuityWriteTool) {
         continuity.logContinuityBlocked({
           stage: "tool_result",
           reason: "runtime-unavailable",
@@ -84,6 +84,7 @@ export const createToolResultHandler = (deps: LifecycleHookDependencies): Lifecy
         rawPath: trackedToolPathRaw,
       })
       : null;
+    let recordedWorkspaceMutation = false;
 
     if (projectContinuityEnabled && !toolIsError) {
       if (isReadTool) {
@@ -93,13 +94,15 @@ export const createToolResultHandler = (deps: LifecycleHookDependencies): Lifecy
         });
       }
 
-      if (isContinuityActivityTool) {
-        continuityComplianceTracker.mutationToolWrites += 1;
-
-        continuity.recordContinuityEvidencePath({
+      if (isContinuityMutationTool) {
+        recordedWorkspaceMutation = continuity.recordContinuityWorkspaceMutationPath({
           target: continuityComplianceTracker.mutationArtifactPaths,
           pathValue: trackedToolPath,
         });
+
+        if (recordedWorkspaceMutation) {
+          continuityComplianceTracker.mutationToolWrites += 1;
+        }
       }
 
       if (isExplicitContinuityWriteTool) {
@@ -180,7 +183,7 @@ export const createToolResultHandler = (deps: LifecycleHookDependencies): Lifecy
       }
     }
 
-    if ((isContinuityActivityTool || isExplicitContinuityWriteTool) && !projectContinuityEnabled && !toolIsError) {
+    if ((isContinuityMutationTool || isExplicitContinuityWriteTool) && !projectContinuityEnabled && !toolIsError) {
       continuity.logContinuityBlocked({
         stage: "tool_result",
         reason: "project-continuity-disabled",
@@ -189,7 +192,7 @@ export const createToolResultHandler = (deps: LifecycleHookDependencies): Lifecy
       });
     }
 
-    if (isContinuityActivityTool && toolIsError) {
+    if (isContinuityMutationTool && toolIsError) {
       continuity.logContinuityBlocked({
         stage: "tool_result",
         reason: "mutation-tool-error",
@@ -199,7 +202,8 @@ export const createToolResultHandler = (deps: LifecycleHookDependencies): Lifecy
     }
 
     const canAttemptMutationAutoJournal =
-      isContinuityActivityTool &&
+      isContinuityMutationTool &&
+      recordedWorkspaceMutation &&
       !toolIsError &&
       projectContinuityEnabled;
 

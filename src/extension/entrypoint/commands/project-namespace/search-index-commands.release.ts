@@ -110,7 +110,7 @@ export const handleReleaseProjectIndexCommand = async (input: {
       ? ` with ${rebuildResult.errors.length} warning(s)`
       : "";
 
-    return `Project index rebuild finished: status=${rebuildResult.status}, owner=${rebuildResult.ownerUserId || "none"}, sourceDBs=${rebuildResult.sourceDatabaseCount}, rows=${rebuildResult.indexedRowCount}, l1Rows=${rebuildResult.indexedMemoryRowCount}, l0Rows=${rebuildResult.indexedContinuityRowCount}, parallelGroups=${rebuildResult.parallelEvidenceGroupCount}, durationMs=${rebuildResult.lastDurationMs}${errorSuffix}.`;
+    return `Project index rebuild finished: status=${rebuildResult.status}, owner=${rebuildResult.ownerUserId || "none"}, sourceDBs=${rebuildResult.sourceDatabaseCount}, rows=${rebuildResult.indexedRowCount}, l1Rows=${rebuildResult.indexedMemoryRowCount}, l0Rows=${rebuildResult.indexedContinuityRowCount}, members=${rebuildResult.memberCount}, memberProfileSources=${rebuildResult.memberProfileSourceCount}, memberConflicts=${rebuildResult.memberConflictCount}, parallelGroups=${rebuildResult.parallelEvidenceGroupCount}, durationMs=${rebuildResult.lastDurationMs}${errorSuffix}.`;
   }
 
   if (subAction !== "status") {
@@ -125,5 +125,5 @@ export const handleReleaseProjectIndexCommand = async (input: {
     ? status.sourceFingerprint.slice(0, 12)
     : "none";
 
-  return `Project index status: ${status.status}; owner=${ownerInfo}; lastRebuildAt=${rebuildAt}; sourceDBs=${status.sourceDatabaseCount}; rows=${status.indexedRowCount}; l1Rows=${status.indexedMemoryRowCount}; l0Rows=${status.indexedContinuityRowCount}; parallelGroups=${status.parallelEvidenceGroupCount}; schema=${status.schemaVersion}; fingerprint=${fingerprintInfo}; durationMs=${status.lastDurationMs ?? "n/a"}${errorInfo}.`;
+  return `Project index status: ${status.status}; owner=${ownerInfo}; lastRebuildAt=${rebuildAt}; sourceDBs=${status.sourceDatabaseCount}; rows=${status.indexedRowCount}; l1Rows=${status.indexedMemoryRowCount}; l0Rows=${status.indexedContinuityRowCount}; members=${status.memberCount}; memberProfileSources=${status.memberProfileSourceCount}; memberConflicts=${status.memberConflictCount}; parallelGroups=${status.parallelEvidenceGroupCount}; schema=${status.schemaVersion}; fingerprint=${fingerprintInfo}; durationMs=${status.lastDurationMs ?? "n/a"}${errorInfo}.`;
 };

@@ -60,11 +60,12 @@ export const CONTINUITY_CERTAINTY_VALUES: ContinuityCertainty[] = [
   "UNCONFIRMED",
 ];
 
-export const CONTINUITY_ACTIVITY_TOOL_NAMES = new Set([
-  "read",
+// Only tools with explicit file-write semantics are treated as continuity mutations.
+// Read and shell commands are evidence/validation activity at best; counting them
+// as changed artifacts produced noisy end-of-request warnings for research-heavy turns.
+export const CONTINUITY_MUTATION_TOOL_NAMES = new Set([
   "edit",
   "write",
-  "bash",
 ]);
 
 export const CONTINUITY_EXPLICIT_WRITE_TOOL_NAMES = new Set([

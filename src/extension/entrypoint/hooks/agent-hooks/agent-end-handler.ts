@@ -9,6 +9,19 @@
 import type { LifecycleEventHandler, LifecycleHookDependencies } from "../types.js";
 
 /**
+ * Emit one user-visible continuity compliance warning without duplicating UI and stderr output.
+ */
+const emitContinuityComplianceWarning = (ctx: any, message: string): void => {
+  if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
+    ctx.ui.notify(message, "warning");
+    return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.warn(`[project-memory] ${message}`);
+};
+
+/**
  * Build the agent_end handler with explicit lifecycle dependencies.
  */
 export const createAgentEndHandler = (deps: LifecycleHookDependencies): LifecycleEventHandler => {
@@ -59,67 +72,37 @@ export const createAgentEndHandler = (deps: LifecycleHookDependencies): Lifecycl
           "Continuity reminder: workspace changes were made in this request without an explicit continuity update. " +
           "Task is only done after continuity is updated when changes materially affect goal/state/decisions.";
 
-        // eslint-disable-next-line no-console
-        console.warn(`[project-memory] ${reminder}`);
-
-        if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
-          ctx.ui.notify(reminder, "warning");
-        }
+        emitContinuityComplianceWarning(ctx, reminder);
       } else if (missingSemanticContinuity) {
         const semanticReminder =
           "Continuity warning: explicit continuity updates were recorded, but only operational entries were detected. " +
           "Add semantic continuity (PLANS/DECISIONS/DISCOVERIES/OUTCOMES) so user intent/constraints are preserved.";
 
-        // eslint-disable-next-line no-console
-        console.warn(`[project-memory] ${semanticReminder}`);
-
-        if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
-          ctx.ui.notify(semanticReminder, "warning");
-        }
+        emitContinuityComplianceWarning(ctx, semanticReminder);
       } else if (coarseSemanticGranularity) {
         const granularityReminder =
           "Continuity warning: request changed multiple artifacts but semantic continuity entries are too coarse. " +
           `Create per-artifact semantic entries (semanticEntries=${complianceTracker.semanticContinuitySignalWrites}, coveredArtifacts=${complianceTracker.semanticArtifactCoveragePaths.size}, artifactCount=${complianceTracker.mutationArtifactPaths.size}; ${artifactsSummary}).`;
 
-        // eslint-disable-next-line no-console
-        console.warn(`[project-memory] ${granularityReminder}`);
-
-        if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
-          ctx.ui.notify(granularityReminder, "warning");
-        }
+        emitContinuityComplianceWarning(ctx, granularityReminder);
       } else if (missingUserProvenance) {
         const userIntentReminder =
           "Continuity warning: semantic updates were recorded without USER provenance or explicit user-intent evidence. " +
           `Capture user-request intent/constraints to reduce future drift or reversions (${sourcesSummary}; ${artifactsSummary}).`;
 
-        // eslint-disable-next-line no-console
-        console.warn(`[project-memory] ${userIntentReminder}`);
-
-        if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
-          ctx.ui.notify(userIntentReminder, "warning");
-        }
+        emitContinuityComplianceWarning(ctx, userIntentReminder);
       } else if (missingSourceRefsEvidence) {
         const sourceRefReminder =
           "Continuity warning: DECISIONS/DISCOVERIES/OUTCOMES entries were recorded without explicit source_refs evidence. " +
           `Include source_refs in semantic continuity writes to preserve provenance (${sourcesSummary}; ${artifactsSummary}).`;
 
-        // eslint-disable-next-line no-console
-        console.warn(`[project-memory] ${sourceRefReminder}`);
-
-        if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
-          ctx.ui.notify(sourceRefReminder, "warning");
-        }
+        emitContinuityComplianceWarning(ctx, sourceRefReminder);
       } else if (missingPathEvidence) {
         const provenanceReminder =
           "Continuity warning: semantic continuity was recorded but it did not reference observed source/artifact paths. " +
           `Include explicit where/why evidence via content and/or source_refs (${sourcesSummary}; ${artifactsSummary}).`;
 
-        // eslint-disable-next-line no-console
-        console.warn(`[project-memory] ${provenanceReminder}`);
-
-        if (ctx?.hasUI && typeof ctx?.ui?.notify === "function") {
-          ctx.ui.notify(provenanceReminder, "warning");
-        }
+        emitContinuityComplianceWarning(ctx, provenanceReminder);
       }
     }
 

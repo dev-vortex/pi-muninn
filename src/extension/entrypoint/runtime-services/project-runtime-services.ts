@@ -8,6 +8,12 @@
 import { bootstrapProjectSessionRuntime, getProjectSessionRuntime } from "./project-session-store.js";
 import { ensureContinuityVectorSchema, readContinuityVectorStatusCounts } from "../../../memory-data-adapters/sqlite/continuity/index.js";
 import { ensureProjectUserMemoryDatabase } from "../../../memory-providers/pi-mempalace-compatible/project-memory/user-memory-ingest.js";
+import {
+  readProjectMemberProfiles,
+  resolveProjectMemberDisplayName,
+  resolveProjectMemberIdentityLabelHash,
+  upsertProjectMemberProfile,
+} from "../../../project-memory/member-profile.js";
 import type { MemoryExtensionRuntimeState } from "../runtime-state.js";
 import { isContinuityVectorEnabled } from "./runtime-config.js";
 
@@ -42,6 +48,28 @@ export const createProjectRuntimeServices = (state: MemoryExtensionRuntimeState)
 
       if (runtime.config.projectMemoryEnabled && runtime.storePaths.activeScope === "project-enabled") {
         ensureProjectUserMemoryDatabase(runtime.storePaths.projectUserDatabasePath);
+
+        if (runtime.userId) {
+          const existingProfile = readProjectMemberProfiles(runtime.storePaths.projectUserDatabasePath)
+            .find((row) => row.userId === runtime.userId);
+          const configuredIdentity = runtime.config.identity;
+          const usesExplicitProjectIdentity = configuredIdentity?.source === "explicit" || runtime.userIdSource === "project-config";
+
+          upsertProjectMemberProfile({
+            databasePath: runtime.storePaths.projectUserDatabasePath,
+            userId: runtime.userId,
+            // Explicit project identities must not be overwritten later by local
+            // env/Git labels; preserve the configured/profile display instead.
+            displayName: configuredIdentity?.displayName || (usesExplicitProjectIdentity
+              ? existingProfile?.displayName || null
+              : resolveProjectMemberDisplayName({ projectRoot: ctx?.cwd })),
+            identitySource: configuredIdentity?.source === "explicit" ? "explicit" : runtime.userIdSource,
+            identityLabelHash: configuredIdentity?.identityLabelHash
+              || resolveProjectMemberIdentityLabelHash({ projectRoot: ctx?.cwd }),
+            isPortable: configuredIdentity?.isPortable === true,
+            isRandomLocal: configuredIdentity?.isRandomLocal === true || runtime.userIdSource === "random-local",
+          });
+        }
 
         if (isContinuityVectorEnabled()) {
           const vectorSchema = ensureContinuityVectorSchema({

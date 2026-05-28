@@ -461,6 +461,8 @@ export interface CoreProjectIndexContinuityMilestoneHit {
   timestamp: string;
   /** Number of source entries covered by the milestone. */
   sourceEntryCount: number;
+  /** Adapter-specific metadata after normalization. */
+  metadata?: Record<string, unknown>;
 }
 
 /**

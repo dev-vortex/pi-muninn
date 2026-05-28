@@ -16,6 +16,7 @@ import {
   sqliteTableExists,
 } from "../common/better-sqlite3-adapter.js";
 import { deriveParallelEvidenceMarker } from "../../../../packages/memory-core/src/project-index/parallel-evidence.js";
+import { readProjectMemberProfiles } from "../../../project-memory/member-profile.js";
 
 /**
  * Fan-out search input for project user-memory databases.
@@ -29,6 +30,8 @@ export interface FanoutSearchInput {
   topK?: number;
   /** Maximum hits fetched from each user DB source table. */
   perDbLimit?: number;
+  /** Active member id used for readable current-user attribution fallback. */
+  activeUserId?: string | null;
 }
 
 /**
@@ -55,6 +58,12 @@ export interface FanoutSearchHit {
   subjectHintKey: string | null;
   /** Deterministic cross-user group id when subject hint exists. */
   groupId: string | null;
+  /** Human-readable contributor label when available from member attribution. */
+  contributorLabel?: string;
+  /** Raw display name selected for contributor attribution when available. */
+  contributorDisplayName?: string;
+  /** Number of profile conflicts detected for the contributing member. */
+  memberConflictCount?: number;
   /** Number of matched query terms in content/topic. */
   termMatches: number;
 }
@@ -103,6 +112,54 @@ const countTermMatches = (terms: string[], content: string, topic: string): numb
 
   const haystack = `${content}\n${topic}`.toLowerCase();
   return terms.reduce((acc, term) => acc + (haystack.includes(term) ? 1 : 0), 0);
+};
+
+/**
+ * Resolve contributor label for direct fan-out fallback retrieval.
+ */
+const resolveFanoutContributor = (input: {
+  databasePath: string;
+  userId: string;
+  activeUserId?: string | null;
+  aliasByUserId: Map<string, string>;
+}): { contributorLabel?: string; contributorDisplayName?: string; memberConflictCount?: number } => {
+  try {
+    const profile = readProjectMemberProfiles(input.databasePath)
+      .find((row) => row.userId === input.userId);
+
+    if (profile?.displayName) {
+      return {
+        contributorLabel: profile.displayName,
+        contributorDisplayName: profile.displayName,
+        memberConflictCount: 0,
+      };
+    }
+  } catch {
+    // Attribution is best-effort in fan-out fallback; retrieval must continue.
+  }
+
+  if (input.activeUserId && input.userId === input.activeUserId) {
+    return {
+      contributorLabel: input.userId.startsWith("u_") ? "current-user" : input.userId,
+      memberConflictCount: 0,
+    };
+  }
+
+  if (!input.userId.startsWith("u_")) {
+    return {
+      contributorLabel: input.userId,
+      memberConflictCount: 0,
+    };
+  }
+
+  const existing = input.aliasByUserId.get(input.userId);
+  if (existing) {
+    return { contributorLabel: existing, memberConflictCount: 0 };
+  }
+
+  const alias = `project-member-${input.aliasByUserId.size + 2}`;
+  input.aliasByUserId.set(input.userId, alias);
+  return { contributorLabel: alias, memberConflictCount: 0 };
 };
 
 /**
@@ -210,6 +267,7 @@ const readMemoryHits = (input: {
   databasePath: string;
   userId: string;
   limit: number;
+  contributor: { contributorLabel?: string; contributorDisplayName?: string; memberConflictCount?: number };
 }): FanoutSearchHit[] => {
   const lexical = buildLexicalWhereClause(input.terms);
 
@@ -240,6 +298,7 @@ const readMemoryHits = (input: {
       timestamp: typeof row.timestamp === "string" ? row.timestamp : "",
       subjectHintKey: marker.subjectHintKey,
       groupId: marker.groupId,
+      ...input.contributor,
       termMatches: countTermMatches(input.terms, content, topic),
     };
   });
@@ -254,6 +313,7 @@ const readContinuityHits = (input: {
   databasePath: string;
   userId: string;
   limit: number;
+  contributor: { contributorLabel?: string; contributorDisplayName?: string; memberConflictCount?: number };
 }): FanoutSearchHit[] => {
   const lexical = buildLexicalWhereClause(input.terms);
 
@@ -288,6 +348,7 @@ const readContinuityHits = (input: {
       timestamp: typeof row.timestamp === "string" ? row.timestamp : "",
       subjectHintKey: marker.subjectHintKey,
       groupId: marker.groupId,
+      ...input.contributor,
       termMatches: countTermMatches(input.terms, content, topic),
     };
   });
@@ -304,6 +365,8 @@ const querySingleUserDatabase = (input: {
   databasePath: string;
   query: string;
   perDbLimit: number;
+  activeUserId?: string | null;
+  aliasByUserId: Map<string, string>;
 }): FanoutSearchHit[] => {
   const db = openBetterSqliteDatabase(input.databasePath, {
     readOnly: true,
@@ -313,6 +376,12 @@ const querySingleUserDatabase = (input: {
   try {
     const terms = parseQueryTerms(input.query);
     const userId = path.basename(input.databasePath, ".db");
+    const contributor = resolveFanoutContributor({
+      databasePath: input.databasePath,
+      userId,
+      activeUserId: input.activeUserId,
+      aliasByUserId: input.aliasByUserId,
+    });
 
     const memoryHits = sqliteTableExists({ db, tableName: "memories" })
       ? readMemoryHits({
@@ -321,6 +390,7 @@ const querySingleUserDatabase = (input: {
         databasePath: input.databasePath,
         userId,
         limit: input.perDbLimit,
+        contributor,
       })
       : [];
 
@@ -331,6 +401,7 @@ const querySingleUserDatabase = (input: {
         databasePath: input.databasePath,
         userId,
         limit: input.perDbLimit,
+        contributor,
       })
       : [];
 
@@ -363,6 +434,7 @@ export const fanoutProjectMemorySearch = async (
 
   const allHits: FanoutSearchHit[] = [];
   const errors: Array<{ databasePath: string; error: string }> = [];
+  const aliasByUserId = new Map<string, string>();
 
   for (const databasePath of databasePaths) {
     try {
@@ -370,6 +442,8 @@ export const fanoutProjectMemorySearch = async (
         databasePath,
         query: input.query,
         perDbLimit,
+        activeUserId: input.activeUserId,
+        aliasByUserId,
       });
       allHits.push(...hits);
     } catch (error: unknown) {

@@ -2,8 +2,8 @@
  * File intent: expose the host-neutral memory-core public surface.
  *
  * Keep this package free of host lifecycle adapters. Pi/OpenCode/KiloCode host
- * packages should import memory-core and bind host events/tools around these
- * APIs. Data/provider adapters live under explicit memory-core subpaths.
+ * packages should import memory-core, provide concrete data/provider adapters,
+ * and bind host events/tools around these APIs.
  */
 
 export * from "./contracts.js";

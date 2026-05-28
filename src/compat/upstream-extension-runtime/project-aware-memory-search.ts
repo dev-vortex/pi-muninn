@@ -63,6 +63,7 @@ export const renderProjectMemorySearchHits = (input: {
     timestamp: string;
     content: string;
     semanticSimilarity?: number;
+    contributorLabel?: string;
   }>;
 }): string => {
   if (input.hits.length === 0) {
@@ -76,7 +77,8 @@ export const renderProjectMemorySearchHits = (input: {
       ? formatMemorySearchSimilarity(hit.semanticSimilarity)
       : null;
     const metadata = semanticText ? `${semanticText}, ${hit.timestamp}` : hit.timestamp;
-    text += `[project/${hit.topic}] (${metadata})\n`;
+    const contributor = hit.contributorLabel ? `${hit.contributorLabel}/` : "";
+    text += `[project/${contributor}${hit.topic}] (${metadata})\n`;
     text += `${hit.content}\n\n---\n\n`;
   }
 
@@ -129,6 +131,7 @@ export const executeProjectAwareMemorySearch = async (input: {
     timestamp: string;
     content: string;
     semanticSimilarity?: number;
+    contributorLabel?: string;
   }> = [];
   let projectSearchDegradedReason: string | null = null;
   let projectSearchError: string | null = null;
@@ -170,6 +173,7 @@ export const executeProjectAwareMemorySearch = async (input: {
         timestamp: hit.timestamp,
         content: hit.content,
         ...(typeof hit.semanticSimilarity === "number" ? { semanticSimilarity: hit.semanticSimilarity } : {}),
+        ...(hit.contributorLabel ? { contributorLabel: hit.contributorLabel } : {}),
       }));
     }
   } catch (error: unknown) {

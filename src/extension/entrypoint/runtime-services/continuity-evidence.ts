@@ -66,6 +66,23 @@ export const recordContinuityEvidencePath = (input: {
 };
 
 /**
+ * Record only workspace-local mutation paths into continuity compliance.
+ */
+export const recordContinuityWorkspaceMutationPath = (input: {
+  target: Set<string>;
+  pathValue: string | null;
+}): boolean => {
+  if (!input.pathValue || path.isAbsolute(input.pathValue)) {
+    return false;
+  }
+
+  // normalizeContinuityTrackedPath returns absolute paths for files outside the workspace.
+  // Those are scratch/evidence files, not project artifacts that should trigger warnings.
+  recordContinuityEvidencePath(input);
+  return true;
+};
+
+/**
  * Check whether content mentions at least one changed/request artifact path.
  */
 export const continuityContentHasPathEvidence = (input: {

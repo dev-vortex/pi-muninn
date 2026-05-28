@@ -263,6 +263,7 @@ export const searchProjectMemoryByMode = async (
       query: input.query,
       topK,
       perDbLimit,
+      activeUserId: input.activeUserId,
     });
 
     return {
@@ -291,6 +292,7 @@ export const searchProjectMemoryByMode = async (
       query: input.query,
       topK,
       perDbLimit,
+      activeUserId: input.activeUserId,
     });
 
     return {

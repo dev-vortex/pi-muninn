@@ -108,6 +108,10 @@ export type ProjectMemoryIdentitySource =
 export interface ProjectMemoryIdentityConfig {
   /** Resolution source used for current `myUserId`. */
   source: ProjectMemoryIdentitySource;
+  /** Privacy-safe display label intentionally configured by the user. */
+  displayName?: string;
+  /** Privacy-safe hash of the identity label used to derive `myUserId`. */
+  identityLabelHash?: string;
   /** If true, user id is local-random and must not be committed. */
   isRandomLocal: boolean;
   /** If true, identity source is considered portable across machines. */

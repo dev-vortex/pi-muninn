@@ -164,7 +164,7 @@ const mapProjectHitsToRows = (input: {
 
   return input.hits.map((hit) => ({
     scope: "project" as const,
-    contributor: resolveContributorLabel({
+    contributor: input.displayNameByUserId?.[hit.userId]?.trim() || hit.contributorLabel || resolveContributorLabel({
       userId: hit.userId,
       activeUserId: input.activeUserId,
       displayNameByUserId: input.displayNameByUserId,

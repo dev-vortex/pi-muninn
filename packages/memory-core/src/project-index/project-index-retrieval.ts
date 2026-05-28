@@ -232,12 +232,21 @@ const formatSimilarity = (similarity: number): string | null => {
 /**
  * Render one project memory hit for L2 memory search/recall surfaces.
  */
+const readContributorLabel = (value: { userId?: string; metadata?: Record<string, unknown> }): string => {
+  const contributorLabel = value.metadata?.contributorLabel;
+  return typeof contributorLabel === "string" && contributorLabel.length > 0
+    ? contributorLabel
+    : value.userId || "unknown";
+};
+
 const renderProjectMemoryHit = (hit: CoreProjectIndexHit): string => {
   const topic = hit.topic || "general";
   const timestamp = hit.timestamp || "unknown";
+  const contributorLabel = readContributorLabel(hit);
+  const contributor = contributorLabel !== (hit.userId || "unknown") ? `${contributorLabel}/` : "";
   const semanticText = typeof hit.semanticSimilarity === "number" ? formatSimilarity(hit.semanticSimilarity) : null;
   const metadata = semanticText ? `${semanticText}, ${timestamp}` : timestamp;
-  return `[project/${topic}] (${metadata})\n${hit.content}`;
+  return `[project/${contributor}${topic}] (${metadata})\n${hit.content}`;
 };
 
 /**
@@ -468,12 +477,12 @@ export const createProjectIndexRetrievalService = (
 
       for (const entry of entries) {
         const certaintyPrefix = entry.certainty === "UNCONFIRMED" ? "UNCONFIRMED " : "";
-        text += `- [ENTRY id=${entry.sourceId || entry.id}] user=${entry.userId || "unknown"} aggregate_id=${entry.id} ${entry.timestamp || ""} [${entry.section || "PROGRESS"}] [${entry.provenance || "CODE"}] ${certaintyPrefix}${entry.content}\n`;
+        text += `- [ENTRY id=${entry.sourceId || entry.id}] user=${readContributorLabel(entry)} aggregate_id=${entry.id} ${entry.timestamp || ""} [${entry.section || "PROGRESS"}] [${entry.provenance || "CODE"}] ${certaintyPrefix}${entry.content}\n`;
       }
 
       for (const milestone of milestones as CoreProjectIndexContinuityMilestoneHit[]) {
         const certaintyPrefix = milestone.certainty === "UNCONFIRMED" ? "UNCONFIRMED " : "";
-        text += `- [MILESTONE id=${milestone.id}] user=${milestone.userId} ${milestone.timestamp} [${milestone.section}] [${milestone.provenance}] ${certaintyPrefix}${milestone.summary} (sourceEntries=${milestone.sourceEntryCount}; readOnly=yes)\n`;
+        text += `- [MILESTONE id=${milestone.id}] user=${readContributorLabel(milestone)} ${milestone.timestamp} [${milestone.section}] [${milestone.provenance}] ${certaintyPrefix}${milestone.summary} (sourceEntries=${milestone.sourceEntryCount}; readOnly=yes)\n`;
       }
 
       if (search.degradedReason) {
@@ -529,6 +538,10 @@ export const createProjectIndexRetrievalService = (
           userIds: Array.from(new Set([
             ...entries.map((entry) => entry.userId || "unknown"),
             ...milestones.map((milestone) => milestone.userId),
+          ])).sort((left, right) => left.localeCompare(right)),
+          contributorLabels: Array.from(new Set([
+            ...entries.map(readContributorLabel),
+            ...milestones.map(readContributorLabel),
           ])).sort((left, right) => left.localeCompare(right)),
           ...search.diagnostics,
         },

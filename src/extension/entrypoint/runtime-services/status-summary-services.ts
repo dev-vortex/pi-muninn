@@ -212,7 +212,8 @@ export const createStatusSummaryServices = (input: {
       summary:
         `l2(status=${status.status}, owner=${status.ownerUserId || "none"}, ` +
         `rows=${status.indexedRowCount}, l1Rows=${status.indexedMemoryRowCount}, ` +
-        `l0Rows=${status.indexedContinuityRowCount}, parallelGroups=${status.parallelEvidenceGroupCount}, ` +
+        `l0Rows=${status.indexedContinuityRowCount}, members=${status.memberCount}, ` +
+        `memberConflicts=${status.memberConflictCount}, parallelGroups=${status.parallelEvidenceGroupCount}, ` +
         `lastRebuildAt=${status.lastRebuildAt || "never"}${warningSuffix})`,
       details: { ...status },
     };

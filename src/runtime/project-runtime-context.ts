@@ -301,6 +301,8 @@ export const resolveProjectRuntimeContext = async (
     const nextUserId = initialUserIdResolution.userId;
     const nextIdentity = {
       source: initialUserIdResolution.source,
+      ...(config.identity?.displayName ? { displayName: config.identity.displayName } : {}),
+      ...(config.identity?.identityLabelHash ? { identityLabelHash: config.identity.identityLabelHash } : {}),
       isRandomLocal: initialUserIdResolution.source === "random-local",
       isPortable: isPortableUserIdResolutionSource(initialUserIdResolution.source),
     };

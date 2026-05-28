@@ -19,6 +19,7 @@ import {
 import { discoverProjectUserDatabases } from "./fanout-retrieval.js";
 import type { FanoutSearchHit } from "./fanout-retrieval.js";
 import { deriveParallelEvidenceMarker } from "../../../../packages/memory-core/src/project-index/parallel-evidence.js";
+import { readProjectMemberProfiles, type ProjectMemberProfile } from "../../../project-memory/member-profile.js";
 
 /**
  * Current L2 cache DB filename under `${PROJECT}/.agent/memory`.
@@ -33,7 +34,7 @@ export const LEGACY_PROJECT_INDEX_DATABASE_FILENAME = "project.db";
 /**
  * Schema version marker persisted in cache metadata.
  */
-export const PROJECT_INDEX_SCHEMA_VERSION = 2;
+export const PROJECT_INDEX_SCHEMA_VERSION = 3;
 
 /**
  * One memory row materialized from user DB `memories` table.
@@ -58,6 +59,22 @@ interface IndexedContinuityRow {
 }
 
 /**
+ * One L2-reconciled project member used for contributor attribution.
+ */
+interface ReconciledProjectMember {
+  userId: string;
+  displayName: string | null;
+  attributionLabel: string;
+  identitySource: string;
+  sourceCount: number;
+  conflictCount: number;
+  firstSeenAt: string | null;
+  lastSeenAt: string | null;
+  isPortable: boolean;
+  isRandomLocal: boolean;
+}
+
+/**
  * Deterministic source-signature row used for cache invalidation/rebuild checks.
  */
 export interface ProjectIndexSourceFingerprintRow {
@@ -67,6 +84,8 @@ export interface ProjectIndexSourceFingerprintRow {
   memoryLatestTimestamp: string | null;
   continuityCount: number;
   continuityLatestTimestamp: string | null;
+  memberProfileCount: number;
+  memberProfileLatestTimestamp: string | null;
 }
 
 /**
@@ -103,6 +122,9 @@ export interface ProjectIndexStatus {
   indexedMemoryRowCount: number;
   indexedContinuityRowCount: number;
   parallelEvidenceGroupCount: number;
+  memberCount: number;
+  memberProfileSourceCount: number;
+  memberConflictCount: number;
   ownerUserId: string | null;
   sourceFingerprint: string | null;
   schemaVersion: number;
@@ -304,7 +326,10 @@ const ensureIndexSchema = (db: BetterSqliteDatabase): void => {
       source TEXT NOT NULL,
       timestamp TEXT NOT NULL,
       subject_hint_key TEXT,
-      group_id TEXT
+      group_id TEXT,
+      contributor_label TEXT,
+      contributor_display_name TEXT,
+      member_conflict_count INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE INDEX IF NOT EXISTS idx_indexed_memories_owner_timestamp
@@ -324,9 +349,12 @@ const ensureIndexSchema = (db: BetterSqliteDatabase): void => {
       indexed_memory_row_count INTEGER NOT NULL DEFAULT 0,
       indexed_continuity_row_count INTEGER NOT NULL DEFAULT 0,
       parallel_group_count INTEGER NOT NULL DEFAULT 0,
+      member_count INTEGER NOT NULL DEFAULT 0,
+      member_profile_source_count INTEGER NOT NULL DEFAULT 0,
+      member_conflict_count INTEGER NOT NULL DEFAULT 0,
       owner_user_id TEXT,
       source_fingerprint TEXT,
-      schema_version INTEGER NOT NULL DEFAULT 2,
+      schema_version INTEGER NOT NULL DEFAULT 3,
       last_duration_ms INTEGER,
       last_status TEXT NOT NULL DEFAULT 'uninitialized',
       last_error TEXT
@@ -344,6 +372,37 @@ const ensureIndexSchema = (db: BetterSqliteDatabase): void => {
 
     CREATE INDEX IF NOT EXISTS idx_l2_parallel_markers_owner
       ON l2_parallel_evidence_markers(owner_user_id);
+
+    CREATE TABLE IF NOT EXISTS l2_project_members (
+      owner_user_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      display_name TEXT,
+      attribution_label TEXT NOT NULL,
+      identity_source TEXT NOT NULL,
+      is_portable INTEGER NOT NULL DEFAULT 0,
+      is_random_local INTEGER NOT NULL DEFAULT 0,
+      source_count INTEGER NOT NULL DEFAULT 0,
+      conflict_count INTEGER NOT NULL DEFAULT 0,
+      first_seen_at TEXT,
+      last_seen_at TEXT,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (owner_user_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS l2_project_member_sources (
+      owner_user_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      source_db TEXT NOT NULL,
+      display_name TEXT,
+      identity_source TEXT NOT NULL,
+      first_seen_at TEXT,
+      last_seen_at TEXT,
+      profile_updated_at TEXT,
+      PRIMARY KEY (owner_user_id, user_id, source_db)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_l2_project_member_sources_owner
+      ON l2_project_member_sources(owner_user_id);
   `);
 
   // Additive migration coverage for older schema snapshots.
@@ -371,6 +430,24 @@ const ensureIndexSchema = (db: BetterSqliteDatabase): void => {
     columnName: "group_id",
     definition: "group_id TEXT",
   });
+  ensureTableColumn({
+    db,
+    tableName: "indexed_memories",
+    columnName: "contributor_label",
+    definition: "contributor_label TEXT",
+  });
+  ensureTableColumn({
+    db,
+    tableName: "indexed_memories",
+    columnName: "contributor_display_name",
+    definition: "contributor_display_name TEXT",
+  });
+  ensureTableColumn({
+    db,
+    tableName: "indexed_memories",
+    columnName: "member_conflict_count",
+    definition: "member_conflict_count INTEGER NOT NULL DEFAULT 0",
+  });
 
   ensureTableColumn({
     db,
@@ -393,6 +470,24 @@ const ensureIndexSchema = (db: BetterSqliteDatabase): void => {
   ensureTableColumn({
     db,
     tableName: "index_meta",
+    columnName: "member_count",
+    definition: "member_count INTEGER NOT NULL DEFAULT 0",
+  });
+  ensureTableColumn({
+    db,
+    tableName: "index_meta",
+    columnName: "member_profile_source_count",
+    definition: "member_profile_source_count INTEGER NOT NULL DEFAULT 0",
+  });
+  ensureTableColumn({
+    db,
+    tableName: "index_meta",
+    columnName: "member_conflict_count",
+    definition: "member_conflict_count INTEGER NOT NULL DEFAULT 0",
+  });
+  ensureTableColumn({
+    db,
+    tableName: "index_meta",
     columnName: "owner_user_id",
     definition: "owner_user_id TEXT",
   });
@@ -406,7 +501,7 @@ const ensureIndexSchema = (db: BetterSqliteDatabase): void => {
     db,
     tableName: "index_meta",
     columnName: "schema_version",
-    definition: "schema_version INTEGER NOT NULL DEFAULT 2",
+    definition: "schema_version INTEGER NOT NULL DEFAULT 3",
   });
 };
 
@@ -475,6 +570,125 @@ const readUserContinuityRows = (databasePath: string): IndexedContinuityRow[] =>
 };
 
 /**
+ * Build a fallback member profile for older project-member DBs.
+ */
+const buildFallbackMemberProfile = (input: {
+  userId: string;
+}): ProjectMemberProfile => ({
+  userId: input.userId,
+  displayName: null,
+  identitySource: "db-filename",
+  identityLabelHash: null,
+  isPortable: !input.userId.startsWith("u_local_"),
+  isRandomLocal: input.userId.startsWith("u_local_"),
+  firstSeenAt: "",
+  lastSeenAt: "",
+  updatedAt: "",
+});
+
+/**
+ * Read member profiles from one user DB, falling back to DB filename identity.
+ */
+const readUserMemberProfiles = (input: {
+  databasePath: string;
+  userId: string;
+}): ProjectMemberProfile[] => {
+  const profiles = readProjectMemberProfiles(input.databasePath);
+  return profiles.length > 0
+    ? profiles
+    : [buildFallbackMemberProfile({ userId: input.userId })];
+};
+
+/**
+ * Return the earliest non-empty ISO-like timestamp.
+ */
+const minOptionalTimestamp = (values: string[]): string | null => {
+  const present = values.filter((value) => value.length > 0).sort((left, right) => left.localeCompare(right));
+  return present[0] || null;
+};
+
+/**
+ * Return the latest non-empty ISO-like timestamp.
+ */
+const maxOptionalTimestamp = (values: string[]): string | null => {
+  const present = values.filter((value) => value.length > 0).sort((left, right) => left.localeCompare(right));
+  return present[present.length - 1] || null;
+};
+
+/**
+ * Build a deterministic fallback contributor label for one opaque user id.
+ */
+const resolveFallbackAttributionLabel = (input: {
+  userId: string;
+  ownerUserId: string;
+  aliasByUserId: Map<string, string>;
+}): string => {
+  if (input.userId === input.ownerUserId) {
+    return input.userId.startsWith("u_") ? "current-user" : input.userId;
+  }
+
+  if (!input.userId.startsWith("u_")) {
+    return input.userId;
+  }
+
+  const existing = input.aliasByUserId.get(input.userId);
+  if (existing) {
+    return existing;
+  }
+
+  const alias = `project-member-${input.aliasByUserId.size + 2}`;
+  input.aliasByUserId.set(input.userId, alias);
+  return alias;
+};
+
+/**
+ * Reconcile member profiles across discovered project-member DBs.
+ */
+const reconcileProjectMembers = (input: {
+  ownerUserId: string;
+  sourceProfiles: Array<{ databasePath: string; profile: ProjectMemberProfile }>;
+}): ReconciledProjectMember[] => {
+  const profilesByUserId = new Map<string, Array<{ databasePath: string; profile: ProjectMemberProfile }>>();
+
+  for (const sourceProfile of input.sourceProfiles) {
+    const current = profilesByUserId.get(sourceProfile.profile.userId) || [];
+    current.push(sourceProfile);
+    profilesByUserId.set(sourceProfile.profile.userId, current);
+  }
+
+  const aliasByUserId = new Map<string, string>();
+  const userIds = [...profilesByUserId.keys()].sort((left, right) => left.localeCompare(right));
+
+  return userIds.map((userId) => {
+    const sources = profilesByUserId.get(userId) || [];
+    const displayNames = [...new Set(sources
+      .map((source) => source.profile.displayName || "")
+      .filter((displayName) => displayName.length > 0))]
+      .sort((left, right) => left.localeCompare(right));
+    const identitySources = [...new Set(sources.map((source) => source.profile.identitySource))];
+    const displayName = displayNames[0] || null;
+    const conflictCount = Math.max(0, displayNames.length - 1) + Math.max(0, identitySources.length - 1);
+
+    return {
+      userId,
+      displayName,
+      attributionLabel: displayName || resolveFallbackAttributionLabel({
+        userId,
+        ownerUserId: input.ownerUserId,
+        aliasByUserId,
+      }),
+      identitySource: identitySources.length === 1 ? identitySources[0] : "conflict",
+      sourceCount: sources.length,
+      conflictCount,
+      firstSeenAt: minOptionalTimestamp(sources.map((source) => source.profile.firstSeenAt)),
+      lastSeenAt: maxOptionalTimestamp(sources.map((source) => source.profile.lastSeenAt)),
+      isPortable: sources.some((source) => source.profile.isPortable),
+      isRandomLocal: sources.every((source) => source.profile.isRandomLocal),
+    };
+  });
+};
+
+/**
  * Read memory + continuity aggregate counters for one user DB.
  */
 const readFingerprintRow = (databasePath: string): ProjectIndexSourceFingerprintRow => {
@@ -500,6 +714,13 @@ const readFingerprintRow = (databasePath: string): ProjectIndexSourceFingerprint
       `).get()
       : undefined;
 
+    const memberProfileAggregate = tableExists({ db, tableName: "project_member_profiles" })
+      ? db.prepare(`
+        SELECT COUNT(*) AS total, MAX(updated_at) AS latest
+        FROM project_member_profiles
+      `).get()
+      : undefined;
+
     return {
       userId,
       databasePath,
@@ -507,6 +728,8 @@ const readFingerprintRow = (databasePath: string): ProjectIndexSourceFingerprint
       memoryLatestTimestamp: typeof memoryAggregate?.latest === "string" ? memoryAggregate.latest : null,
       continuityCount: normalizeSqliteCountValue(continuityAggregate?.total),
       continuityLatestTimestamp: typeof continuityAggregate?.latest === "string" ? continuityAggregate.latest : null,
+      memberProfileCount: normalizeSqliteCountValue(memberProfileAggregate?.total),
+      memberProfileLatestTimestamp: typeof memberProfileAggregate?.latest === "string" ? memberProfileAggregate.latest : null,
     };
   } finally {
     db.close();
@@ -549,6 +772,8 @@ export const computeProjectIndexSourceFingerprint = async (input: {
       `mt=${row.memoryLatestTimestamp || ""}`,
       `c=${row.continuityCount}`,
       `ct=${row.continuityLatestTimestamp || ""}`,
+      `p=${row.memberProfileCount}`,
+      `pt=${row.memberProfileLatestTimestamp || ""}`,
     ].join("|")),
     ...errors
       .sort((left, right) => left.databasePath.localeCompare(right.databasePath))
@@ -586,6 +811,9 @@ export const readProjectIndexStatus = async (input: {
       indexedMemoryRowCount: 0,
       indexedContinuityRowCount: 0,
       parallelEvidenceGroupCount: 0,
+      memberCount: 0,
+      memberProfileSourceCount: 0,
+      memberConflictCount: 0,
       ownerUserId: null,
       sourceFingerprint: null,
       schemaVersion: PROJECT_INDEX_SCHEMA_VERSION,
@@ -608,6 +836,9 @@ export const readProjectIndexStatus = async (input: {
         indexed_memory_row_count,
         indexed_continuity_row_count,
         parallel_group_count,
+        member_count,
+        member_profile_source_count,
+        member_conflict_count,
         owner_user_id,
         source_fingerprint,
         schema_version,
@@ -628,6 +859,9 @@ export const readProjectIndexStatus = async (input: {
         indexedMemoryRowCount: 0,
         indexedContinuityRowCount: 0,
         parallelEvidenceGroupCount: 0,
+        memberCount: 0,
+        memberProfileSourceCount: 0,
+        memberConflictCount: 0,
         ownerUserId: null,
         sourceFingerprint: null,
         schemaVersion: PROJECT_INDEX_SCHEMA_VERSION,
@@ -651,6 +885,9 @@ export const readProjectIndexStatus = async (input: {
       indexedMemoryRowCount: normalizeSqliteCountValue(row.indexed_memory_row_count),
       indexedContinuityRowCount: normalizeSqliteCountValue(row.indexed_continuity_row_count),
       parallelEvidenceGroupCount: normalizeSqliteCountValue(row.parallel_group_count),
+      memberCount: normalizeSqliteCountValue(row.member_count),
+      memberProfileSourceCount: normalizeSqliteCountValue(row.member_profile_source_count),
+      memberConflictCount: normalizeSqliteCountValue(row.member_conflict_count),
       ownerUserId: typeof row.owner_user_id === "string" ? row.owner_user_id : null,
       sourceFingerprint: typeof row.source_fingerprint === "string" ? row.source_fingerprint : null,
       schemaVersion: typeof row.schema_version === "number"
@@ -710,7 +947,20 @@ export const searchProjectIndex = async (
     const terms = parseQueryTerms(input.query);
 
     let sql = `
-      SELECT user_id, source_db, id, record_kind, content, topic, source, timestamp, subject_hint_key, group_id
+      SELECT
+        user_id,
+        source_db,
+        id,
+        record_kind,
+        content,
+        topic,
+        source,
+        timestamp,
+        subject_hint_key,
+        group_id,
+        contributor_label,
+        contributor_display_name,
+        member_conflict_count
       FROM indexed_memories
       WHERE owner_user_id = ?
     `;
@@ -748,6 +998,9 @@ export const searchProjectIndex = async (
         timestamp: typeof row.timestamp === "string" ? row.timestamp : "",
         subjectHintKey: typeof row.subject_hint_key === "string" ? row.subject_hint_key : null,
         groupId: typeof row.group_id === "string" ? row.group_id : null,
+        contributorLabel: typeof row.contributor_label === "string" ? row.contributor_label : undefined,
+        contributorDisplayName: typeof row.contributor_display_name === "string" ? row.contributor_display_name : undefined,
+        memberConflictCount: normalizeSqliteCountValue(row.member_conflict_count),
         termMatches: countTermMatches(terms, content, topic),
       };
     });
@@ -810,12 +1063,17 @@ export const rebuildProjectIndex = async (input: {
   const errors: Array<{ databasePath: string; error: string }> = [...fingerprint.errors];
   let indexedMemoryRowCount = 0;
   let indexedContinuityRowCount = 0;
+  let memberProfileSourceCount = 0;
+  let memberConflictCount = 0;
+  let reconciledMembers: ReconciledProjectMember[] = [];
 
   try {
     ensureIndexSchema(db);
 
     db.prepare("DELETE FROM indexed_memories WHERE owner_user_id = ?").run(ownerUserId);
     db.prepare("DELETE FROM l2_parallel_evidence_markers WHERE owner_user_id = ?").run(ownerUserId);
+    db.prepare("DELETE FROM l2_project_members WHERE owner_user_id = ?").run(ownerUserId);
+    db.prepare("DELETE FROM l2_project_member_sources WHERE owner_user_id = ?").run(ownerUserId);
 
     const insertRow = db.prepare(`
       INSERT INTO indexed_memories (
@@ -829,10 +1087,95 @@ export const rebuildProjectIndex = async (input: {
         source,
         timestamp,
         subject_hint_key,
-        group_id
+        group_id,
+        contributor_label,
+        contributor_display_name,
+        member_conflict_count
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
+
+    const sourceProfiles: Array<{ databasePath: string; profile: ProjectMemberProfile }> = [];
+    for (const sourceRow of fingerprint.rows) {
+      for (const profile of readUserMemberProfiles({
+        databasePath: sourceRow.databasePath,
+        userId: sourceRow.userId,
+      })) {
+        sourceProfiles.push({ databasePath: sourceRow.databasePath, profile });
+      }
+    }
+
+    reconciledMembers = reconcileProjectMembers({
+      ownerUserId,
+      sourceProfiles,
+    });
+    memberProfileSourceCount = sourceProfiles.length;
+    memberConflictCount = reconciledMembers.reduce((acc, member) => acc + member.conflictCount, 0);
+
+    const memberByUserId = new Map(reconciledMembers.map((member) => [member.userId, member]));
+
+    const insertMember = db.prepare(`
+      INSERT INTO l2_project_members (
+        owner_user_id,
+        user_id,
+        display_name,
+        attribution_label,
+        identity_source,
+        is_portable,
+        is_random_local,
+        source_count,
+        conflict_count,
+        first_seen_at,
+        last_seen_at,
+        updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const insertMemberSource = db.prepare(`
+      INSERT INTO l2_project_member_sources (
+        owner_user_id,
+        user_id,
+        source_db,
+        display_name,
+        identity_source,
+        first_seen_at,
+        last_seen_at,
+        profile_updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const memberUpdatedAt = new Date().toISOString();
+    for (const member of reconciledMembers) {
+      insertMember.run(
+        ownerUserId,
+        member.userId,
+        member.displayName,
+        member.attributionLabel,
+        member.identitySource,
+        member.isPortable ? 1 : 0,
+        member.isRandomLocal ? 1 : 0,
+        member.sourceCount,
+        member.conflictCount,
+        member.firstSeenAt,
+        member.lastSeenAt,
+        memberUpdatedAt,
+      );
+    }
+
+    for (const sourceProfile of sourceProfiles) {
+      insertMemberSource.run(
+        ownerUserId,
+        sourceProfile.profile.userId,
+        sourceProfile.databasePath,
+        sourceProfile.profile.displayName,
+        sourceProfile.profile.identitySource,
+        sourceProfile.profile.firstSeenAt || null,
+        sourceProfile.profile.lastSeenAt || null,
+        sourceProfile.profile.updatedAt || null,
+      );
+    }
 
     for (const sourceRow of fingerprint.rows) {
       try {
@@ -843,6 +1186,8 @@ export const rebuildProjectIndex = async (input: {
             content: row.content,
             topic: row.topic,
           });
+
+          const member = memberByUserId.get(sourceRow.userId);
 
           insertRow.run(
             ownerUserId,
@@ -856,6 +1201,9 @@ export const rebuildProjectIndex = async (input: {
             row.timestamp,
             marker.subjectHintKey,
             marker.groupId,
+            member?.attributionLabel || null,
+            member?.displayName || null,
+            member?.conflictCount || 0,
           );
 
           indexedMemoryRowCount += 1;
@@ -870,6 +1218,8 @@ export const rebuildProjectIndex = async (input: {
             topic,
           });
 
+          const member = memberByUserId.get(sourceRow.userId);
+
           insertRow.run(
             ownerUserId,
             sourceRow.userId,
@@ -882,6 +1232,9 @@ export const rebuildProjectIndex = async (input: {
             row.timestamp,
             marker.subjectHintKey,
             marker.groupId,
+            member?.attributionLabel || null,
+            member?.displayName || null,
+            member?.conflictCount || 0,
           );
 
           indexedContinuityRowCount += 1;
@@ -957,6 +1310,9 @@ export const rebuildProjectIndex = async (input: {
         indexed_memory_row_count,
         indexed_continuity_row_count,
         parallel_group_count,
+        member_count,
+        member_profile_source_count,
+        member_conflict_count,
         owner_user_id,
         source_fingerprint,
         schema_version,
@@ -964,7 +1320,7 @@ export const rebuildProjectIndex = async (input: {
         last_status,
         last_error
       )
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         last_rebuild_at = excluded.last_rebuild_at,
         source_db_count = excluded.source_db_count,
@@ -972,6 +1328,9 @@ export const rebuildProjectIndex = async (input: {
         indexed_memory_row_count = excluded.indexed_memory_row_count,
         indexed_continuity_row_count = excluded.indexed_continuity_row_count,
         parallel_group_count = excluded.parallel_group_count,
+        member_count = excluded.member_count,
+        member_profile_source_count = excluded.member_profile_source_count,
+        member_conflict_count = excluded.member_conflict_count,
         owner_user_id = excluded.owner_user_id,
         source_fingerprint = excluded.source_fingerprint,
         schema_version = excluded.schema_version,
@@ -985,6 +1344,9 @@ export const rebuildProjectIndex = async (input: {
       indexedMemoryRowCount,
       indexedContinuityRowCount,
       groupedParallelRows.length,
+      reconciledMembers.length,
+      memberProfileSourceCount,
+      memberConflictCount,
       ownerUserId,
       fingerprint.digest,
       PROJECT_INDEX_SCHEMA_VERSION,
@@ -1002,6 +1364,9 @@ export const rebuildProjectIndex = async (input: {
       indexedMemoryRowCount,
       indexedContinuityRowCount,
       parallelEvidenceGroupCount: groupedParallelRows.length,
+      memberCount: reconciledMembers.length,
+      memberProfileSourceCount: memberProfileSourceCount,
+      memberConflictCount,
       ownerUserId,
       sourceFingerprint: fingerprint.digest,
       schemaVersion: PROJECT_INDEX_SCHEMA_VERSION,
@@ -1025,6 +1390,9 @@ export const rebuildProjectIndex = async (input: {
       indexedMemoryRowCount,
       indexedContinuityRowCount,
       parallelEvidenceGroupCount: 0,
+      memberCount: 0,
+      memberProfileSourceCount: 0,
+      memberConflictCount: 0,
       ownerUserId,
       sourceFingerprint: fingerprint.digest,
       schemaVersion: PROJECT_INDEX_SCHEMA_VERSION,

@@ -13,6 +13,8 @@ export const selectProjectMemoryHits = (input: {
     timestamp: string;
     content: string;
     semanticSimilarity?: number;
+    contributorLabel?: string;
+    contributorDisplayName?: string;
   }>;
   topicFilter: string | null;
   limit: number;
@@ -22,6 +24,8 @@ export const selectProjectMemoryHits = (input: {
   timestamp: string;
   content: string;
   semanticSimilarity?: number;
+  contributorLabel?: string;
+  contributorDisplayName?: string;
 }> => input.results
   .filter((hit) => hit.kind === "memory")
   .filter((hit) => input.topicFilter ? hit.topic.toLowerCase() === input.topicFilter : true)
@@ -32,6 +36,8 @@ export const selectProjectMemoryHits = (input: {
     timestamp: hit.timestamp,
     content: hit.content,
     ...(typeof hit.semanticSimilarity === "number" ? { semanticSimilarity: hit.semanticSimilarity } : {}),
+    ...(hit.contributorLabel ? { contributorLabel: hit.contributorLabel } : {}),
+    ...(hit.contributorDisplayName ? { contributorDisplayName: hit.contributorDisplayName } : {}),
   }));
 
 /**

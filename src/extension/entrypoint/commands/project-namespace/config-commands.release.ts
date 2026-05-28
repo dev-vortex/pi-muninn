@@ -11,6 +11,12 @@ import {
   resolveProjectContinuityBriefingMode,
   updateProjectMemoryConfig,
 } from "../../../../project-memory/config.js";
+import {
+  hashProjectMemberIdentityLabel,
+  normalizeProjectMemberDisplayName,
+  readProjectMemberProfiles,
+  upsertProjectMemberProfile,
+} from "../../../../project-memory/member-profile.js";
 import { generateDeterministicUserId } from "../../../../project-memory/user-id.js";
 import { migrateProjectUserDatabaseIdentity } from "../../../../runtime/project-runtime-context.js";
 import type { ExtensionCommandDependencies } from "../types.js";
@@ -58,6 +64,8 @@ export const handleReleaseProjectUserCommand = async (input: {
     }
 
     const recalculatedUserId = generateDeterministicUserId(rawUserValue);
+    const explicitDisplayName = normalizeProjectMemberDisplayName(rawUserValue);
+    const explicitIdentityLabelHash = hashProjectMemberIdentityLabel(rawUserValue) || undefined;
     const currentConfig = await loadProjectMemoryConfig(ctx.cwd);
     const previousUserId = currentConfig.myUserId?.trim() || null;
 
@@ -68,6 +76,8 @@ export const handleReleaseProjectUserCommand = async (input: {
         myUserId: recalculatedUserId,
         identity: {
           source: "explicit",
+          ...(explicitDisplayName ? { displayName: explicitDisplayName } : {}),
+          ...(explicitIdentityLabelHash ? { identityLabelHash: explicitIdentityLabelHash } : {}),
           isPortable: true,
           isRandomLocal: false,
         },
@@ -110,6 +120,18 @@ export const handleReleaseProjectUserCommand = async (input: {
 
     if (!result.ok || !runtime) {
       return `Failed to set project memory user using '${rawUserValue}': ${result.error || "runtime not initialized"}`;
+    }
+
+    if (runtime.storePaths.activeScope === "project-enabled" && runtime.userId) {
+      upsertProjectMemberProfile({
+        databasePath: runtime.storePaths.projectUserDatabasePath,
+        userId: runtime.userId,
+        displayName: explicitDisplayName,
+        identitySource: "explicit",
+        identityLabelHash: explicitIdentityLabelHash,
+        isPortable: true,
+        isRandomLocal: false,
+      });
     }
 
     if (!currentConfig.projectMemoryEnabled) {
@@ -173,10 +195,19 @@ export const handleReleaseProjectUserCommand = async (input: {
     : "configured=none";
 
   const identity = config.identity
-    ? `identity(source=${config.identity.source}, portable=${config.identity.isPortable ? "yes" : "no"}, randomLocal=${config.identity.isRandomLocal ? "yes" : "no"})`
+    ? `identity(source=${config.identity.source}, displayName=${config.identity.displayName || "none"}, portable=${config.identity.isPortable ? "yes" : "no"}, randomLocal=${config.identity.isRandomLocal ? "yes" : "no"})`
     : "identity=unset";
 
-  return notifyReleaseProjectNamespaceMessage(`Project memory user status: ${configured}; ${identity}; ${resolved}.`);
+  let profile = "profile=unavailable";
+  if (runtime?.storePaths.activeScope === "project-enabled") {
+    const activeProfile = readProjectMemberProfiles(runtime.storePaths.projectUserDatabasePath)
+      .find((row) => row.userId === runtime.userId);
+    profile = activeProfile
+      ? `profile(displayName=${activeProfile.displayName || "none"}, source=${activeProfile.identitySource}, registered=yes)`
+      : "profile=missing";
+  }
+
+  return notifyReleaseProjectNamespaceMessage(`Project memory user status: ${configured}; ${identity}; ${resolved}; ${profile}.`);
 };
 
 /**

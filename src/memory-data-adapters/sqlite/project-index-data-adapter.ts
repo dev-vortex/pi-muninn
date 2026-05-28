@@ -147,6 +147,9 @@ const normalizeProjectIndexHit = (hit: ModeAwareProjectSearchResult["results"][n
           provider: "sqlite-project-index-data-adapter",
           subjectHintKey: hit.subjectHintKey,
           groupId: hit.groupId,
+          contributorLabel: hit.contributorLabel,
+          contributorDisplayName: hit.contributorDisplayName,
+          memberConflictCount: hit.memberConflictCount,
         },
       };
     }
@@ -171,6 +174,9 @@ const normalizeProjectIndexHit = (hit: ModeAwareProjectSearchResult["results"][n
         provider: "sqlite-project-index-data-adapter",
         subjectHintKey: hit.subjectHintKey,
         groupId: hit.groupId,
+        contributorLabel: hit.contributorLabel,
+        contributorDisplayName: hit.contributorDisplayName,
+        memberConflictCount: hit.memberConflictCount,
       },
     };
   }
@@ -193,6 +199,9 @@ const normalizeProjectIndexHit = (hit: ModeAwareProjectSearchResult["results"][n
       provider: "sqlite-project-index-data-adapter",
       subjectHintKey: hit.subjectHintKey,
       groupId: hit.groupId,
+      contributorLabel: hit.contributorLabel,
+      contributorDisplayName: hit.contributorDisplayName,
+      memberConflictCount: hit.memberConflictCount,
     },
   };
 };
@@ -247,6 +256,11 @@ const annotateProjectMemorySemanticSignals = async (input: {
  */
 const readContinuityMilestoneHits = async (input: {
   databasePaths: string[];
+  contributorByDatabasePath?: Map<string, {
+    contributorLabel?: string;
+    contributorDisplayName?: string;
+    memberConflictCount?: number;
+  }>;
   query: string;
   section?: ContinuitySection;
   from?: string;
@@ -267,6 +281,7 @@ const readContinuityMilestoneHits = async (input: {
       .filter((row) => matchesQuery({ text: row.summary, query: input.query }));
 
     for (const row of rows) {
+      const contributor = input.contributorByDatabasePath?.get(databasePath);
       milestones.push({
         id: row.id,
         userId,
@@ -277,6 +292,12 @@ const readContinuityMilestoneHits = async (input: {
         summary: row.summary,
         timestamp: row.timestamp,
         sourceEntryCount: row.sourceEntryCount,
+        metadata: {
+          provider: "sqlite-project-index-data-adapter",
+          contributorLabel: contributor?.contributorLabel,
+          contributorDisplayName: contributor?.contributorDisplayName,
+          memberConflictCount: contributor?.memberConflictCount,
+        },
       });
     }
   }
@@ -329,9 +350,15 @@ export const createSqliteProjectIndexDataAdapterForProjectMemoryDir = (input: {
     });
 
     const sourceDatabasePaths = Array.from(new Set(projectSearch.results.map((hit) => hit.databasePath)));
+    const contributorByDatabasePath = new Map(projectSearch.results.map((hit) => [hit.databasePath, {
+      contributorLabel: hit.contributorLabel,
+      contributorDisplayName: hit.contributorDisplayName,
+      memberConflictCount: hit.memberConflictCount,
+    }]));
     const milestones = searchInput.includeMilestones && kindFilter.has("continuity")
       ? await readContinuityMilestoneHits({
         databasePaths: sourceDatabasePaths,
+        contributorByDatabasePath,
         query: searchInput.query,
         section: searchInput.section,
         from: searchInput.from,
@@ -362,7 +389,7 @@ export const createSqliteProjectIndexDataAdapterForProjectMemoryDir = (input: {
     const status = await readProjectIndexStatus({ projectMemoryDir: input.projectMemoryDir });
     return {
       status: status.status === "error" ? "error" : "ok",
-      text: `project index status=${status.status}; rows=${status.indexedRowCount}; sources=${status.sourceDatabaseCount}.`,
+      text: `project index status=${status.status}; rows=${status.indexedRowCount}; sources=${status.sourceDatabaseCount}; members=${status.memberCount}; memberConflicts=${status.memberConflictCount}.`,
       warnings: status.lastError ? [status.lastError] : [],
       diagnostics: {
         provider: "sqlite-project-index-data-adapter",

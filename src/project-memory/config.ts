@@ -11,6 +11,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import {
+  normalizeProjectMemberDisplayName,
+  normalizeProjectMemberIdentityLabelHash,
+} from "./member-profile-privacy.js";
 import type {
   ContinuityBriefingMode,
   EnsureProjectWorkspaceInput,
@@ -369,10 +373,14 @@ export const normalizeProjectMemoryConfig = (
       && normalizedIdentitySource !== "env-username"
       && normalizedIdentitySource !== "os-username"
       && normalizedIdentitySource !== "env-email";
+  const normalizedIdentityDisplayName = normalizeProjectMemberDisplayName(rawIdentity.displayName);
+  const normalizedIdentityLabelHash = normalizeProjectMemberIdentityLabelHash(rawIdentity.identityLabelHash);
 
   const identity = (myUserId || normalizedIdentitySource !== "unresolved")
     ? {
       source: normalizedIdentitySource,
+      ...(normalizedIdentityDisplayName ? { displayName: normalizedIdentityDisplayName } : {}),
+      ...(normalizedIdentityLabelHash ? { identityLabelHash: normalizedIdentityLabelHash } : {}),
       isRandomLocal: normalizedIdentityIsRandomLocal,
       isPortable: normalizedIdentityIsPortable,
     }

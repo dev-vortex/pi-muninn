@@ -16,6 +16,7 @@ import {
   normalizeSqliteCountValue,
   openBetterSqliteDatabase,
 } from "../../../memory-data-adapters/sqlite/common/better-sqlite3-adapter.js";
+import { ensureProjectMemberProfileSchema } from "../../../project-memory/member-profile.js";
 
 const MIN_ASSISTANT_TEXT_LENGTH = 20;
 const MIN_USER_TEXT_LENGTH = 10;
@@ -192,6 +193,8 @@ const buildCapturedExchangeText = (input: {
 const ensureProjectUserMemorySchema = (db: {
   exec: (sql: string) => void;
 }): void => {
+  ensureProjectMemberProfileSchema(db);
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS memories (
       rowid INTEGER PRIMARY KEY AUTOINCREMENT,

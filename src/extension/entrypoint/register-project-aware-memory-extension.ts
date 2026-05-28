@@ -73,6 +73,7 @@ import {
   recordContinuityArtifactCoverageFromContent,
   recordContinuityArtifactCoverageFromSourceRefs,
   recordContinuityEvidencePath,
+  recordContinuityWorkspaceMutationPath,
   renderContinuityEvidenceSummary,
   resolveWorkspaceRoot,
 } from "./runtime-services/continuity-evidence.js";
@@ -132,7 +133,7 @@ export const registerProjectAwareMemoryExtension = (
     state,
     constants: {
       memoryWriteToolNames: constants.MEMORY_WRITE_TOOL_NAMES,
-      continuityActivityToolNames: constants.CONTINUITY_ACTIVITY_TOOL_NAMES,
+      continuityMutationToolNames: constants.CONTINUITY_MUTATION_TOOL_NAMES,
       continuityExplicitWriteToolNames: constants.CONTINUITY_EXPLICIT_WRITE_TOOL_NAMES,
       continuitySemanticSectionSet: constants.CONTINUITY_SEMANTIC_SECTION_SET,
       continuitySourceRefRequiredSectionSet: constants.CONTINUITY_SOURCE_REF_REQUIRED_SECTION_SET,
@@ -166,6 +167,7 @@ export const registerProjectAwareMemoryExtension = (
       readObjectStringField,
       normalizeContinuityTrackedPath,
       recordContinuityEvidencePath,
+      recordContinuityWorkspaceMutationPath,
       decodeContinuityWriteSignalFromToolInput,
       recordContinuityArtifactCoverageFromContent,
       recordContinuityArtifactCoverageFromSourceRefs,

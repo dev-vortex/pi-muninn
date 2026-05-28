@@ -31,6 +31,7 @@ export const renderProjectMemoryRecallHits = (input: {
     topic: string;
     timestamp: string;
     content: string;
+    contributorLabel?: string;
   }>;
 }): string => {
   const filterLabel = input.topicFilter
@@ -46,7 +47,8 @@ export const renderProjectMemoryRecallHits = (input: {
     `Found ${input.hits.length} project memories:\n\n`;
 
   for (const hit of input.hits) {
-    text += `[project/${hit.userId}/${hit.topic}] (${hit.timestamp})\n`;
+    const contributor = hit.contributorLabel || hit.userId;
+    text += `[project/${contributor}/${hit.topic}] (${hit.timestamp})\n`;
     text += `${hit.content}\n\n---\n\n`;
   }
 
@@ -86,6 +88,7 @@ export const executeProjectAwareMemoryRecall = async (input: {
     topic: string;
     timestamp: string;
     content: string;
+    contributorLabel?: string;
   }> = [];
   let projectSearchDegradedReason: string | null = null;
   let projectSearchError: string | null = null;

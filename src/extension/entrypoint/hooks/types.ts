@@ -89,6 +89,7 @@ export interface LifecycleContinuityDependencies {
   readObjectStringField: (input: unknown, field: string) => string | null;
   normalizeContinuityTrackedPath: (input: { ctx: any; rawPath: string }) => string | null;
   recordContinuityEvidencePath: (input: { target: Set<string>; pathValue: string | null }) => void;
+  recordContinuityWorkspaceMutationPath: (input: { target: Set<string>; pathValue: string | null }) => boolean;
   decodeContinuityWriteSignalFromToolInput: (input: { ctx: any; toolInput: unknown }) => any;
   recordContinuityArtifactCoverageFromContent: (input: {
     content: string;
@@ -130,7 +131,7 @@ export interface LifecycleCheckpointDependencies {
  */
 export interface LifecycleConstants {
   memoryWriteToolNames: ReadonlySet<string>;
-  continuityActivityToolNames: ReadonlySet<string>;
+  continuityMutationToolNames: ReadonlySet<string>;
   continuityExplicitWriteToolNames: ReadonlySet<string>;
   continuitySemanticSectionSet: ReadonlySet<unknown>;
   continuitySourceRefRequiredSectionSet: ReadonlySet<unknown>;
